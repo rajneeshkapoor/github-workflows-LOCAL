@@ -1,0 +1,38 @@
+name: NotifySlackOnMerge
+
+on:
+  workflow_call:
+    inputs:
+         REPO_OWNER:
+           required: true
+           type: string
+  
+env:
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  #SLACK_CHANNEL: "#${{ vars.SLACK_NOTIF_CHANNEL }}" #Defined as repo name-notif in Settings>secrets & variables. Eg. workloadmanager-notif
+  SLACK_CHANNEL: "#test-notif"
+  #GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
+
+jobs:
+  notify-slack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate Timestamp
+        id: timestamp
+        run: |
+         echo "TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_ENV
+      - name: Send Slack notification
+        if: github.repository_owner == '${{ env.REPO_OWNER }}''
+        run: |
+         echo "TIMESTAMP : ${{ env.TIMESTAMP }}"
+         curl -X POST -H 'Content-type: application/json' --data '{
+            "channel": "${{ env.SLACK_CHANNEL }}",
+            "text": "New GitHub Event",
+            "blocks": [{
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "PR Merged at ${{ env.TIMESTAMP }}"
+               }
+            }]
+          }' $SLACK_WEBHOOK_URL
